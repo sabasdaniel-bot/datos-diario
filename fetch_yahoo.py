@@ -21,7 +21,7 @@ def get(url, tries=3):
                 return json.load(r)
         except Exception as e:
             err = str(e)
-            time.sleep(2 * (i + 1))
+            time.sleep(15 * (i + 1) if "429" in err else 2 * (i + 1))
     return {"_error": err}
 
 def main(tfile, out):
@@ -44,9 +44,9 @@ def main(tfile, out):
         items = [{"uuid": x.get("uuid"), "pub": x.get("publisher"), "title": x.get("title"), "link": x.get("link"), "ts": x.get("providerPublishTime"), "rel": x.get("relatedTickers")} for x in (n.get("news") or [])]
         json.dump({"t": t, "items": items, "error": n.get("_error")}, open("%s/news/%s.json" % (out, f), "w"), ensure_ascii=False, separators=(",", ":"))
         print(t, "OK" if man["ok"] and man["ok"][-1]==t else "FALLO " + (man["fallo"][-1]["e"] if man["fallo"] else ""), flush=True)
-        if len(man["ok"])==0 and len(man["fallo"])>=6:
-            print("Yahoo bloquea este servidor: 6 fallos seguidos, se aborta"); json.dump(man, open(out + "/manifest.json", "w"), indent=1); sys.exit(1)
-        time.sleep(0.4)
+        if len(man["fallo"])>=12 and len(man["fallo"])>len(man["ok"]):
+            print("Yahoo bloquea este servidor: demasiados fallos, se aborta"); json.dump(man, open(out + "/manifest.json", "w"), indent=1); sys.exit(1)
+        time.sleep(2)
     json.dump(man, open(out + "/manifest.json", "w"), indent=1)
     print("ok", len(man["ok"]), "fallo", len(man["fallo"]))
     # falla el trabajo solo si fallan más de 40 % (Yahoo bloqueó el servidor)
