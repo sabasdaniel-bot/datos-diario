@@ -1,0 +1,22 @@
+name: datos-yahoo
+on:
+  schedule:
+    # UTC. Bogotá = UTC-5. 14:30 UTC = 09:30 Bogotá (antes de la corrida de las 10:45); 01:15 UTC = 20:15 Bogotá (antes de la de las 20:45)
+    - cron: "30 14 * * 1-5"
+    - cron: "15 1 * * 2-6"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 fetch_yahoo.py tickers.json out
+      - name: Publicar en la rama data (un solo commit, se reescribe)
+        run: |
+          cd out
+          git init -q -b data
+          git config user.name "datos-yahoo"; git config user.email "datos-yahoo@users.noreply.github.com"
+          git add -A; git commit -q -m "datos $(date -u +%FT%TZ)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
