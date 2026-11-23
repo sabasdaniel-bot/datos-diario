@@ -28,6 +28,7 @@ def main(tfile, out):
     tks = json.load(open(tfile))
     os.makedirs(out + "/prices", exist_ok=True); os.makedirs(out + "/news", exist_ok=True)
     man = {"generado_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(), "ok": [], "fallo": []}
+    tks = ["SPY"] + tks
     for t in tks:
         s = ysym(t); f = t.replace(".", "_")
         j = get("https://query1.finance.yahoo.com/v8/finance/chart/%s?range=1y&interval=1d" % urllib.parse.quote(s))
@@ -42,7 +43,7 @@ def main(tfile, out):
         n = get("https://query1.finance.yahoo.com/v1/finance/search?q=%s&newsCount=15&quotesCount=0&listsCount=0" % urllib.parse.quote(s))
         items = [{"uuid": x.get("uuid"), "pub": x.get("publisher"), "title": x.get("title"), "link": x.get("link"), "ts": x.get("providerPublishTime"), "rel": x.get("relatedTickers")} for x in (n.get("news") or [])]
         json.dump({"t": t, "items": items, "error": n.get("_error")}, open("%s/news/%s.json" % (out, f), "w"), ensure_ascii=False, separators=(",", ":"))
-        print(t, "OK" if man["ok"] and man["ok"][-1]==t else "FALLO", flush=True)
+        print(t, "OK" if man["ok"] and man["ok"][-1]==t else "FALLO " + (man["fallo"][-1]["e"] if man["fallo"] else ""), flush=True)
         if len(man["ok"])==0 and len(man["fallo"])>=6:
             print("Yahoo bloquea este servidor: 6 fallos seguidos, se aborta"); json.dump(man, open(out + "/manifest.json", "w"), indent=1); sys.exit(1)
         time.sleep(0.4)
